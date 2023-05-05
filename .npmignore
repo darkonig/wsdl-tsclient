@@ -1,6 +1,7 @@
 src/
 generated/
 test/
+.npmrc
 *.wsdl
 *.wso
 *.asmx

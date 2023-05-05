@@ -39,6 +39,14 @@ const conf = yargs(process.argv.slice(2))
         type: "number",
         description: "Maximum count of definition's with same name but increased suffix. Will throw an error if exceed",
     })
+    .option("kebabFileName", {
+        type: "boolean",
+        description: "Name files using kebab format (file-name.ts)",
+    })
+    .option("deduplicateSoapMethods", {
+        type: "boolean",
+        description: "Remove duplicated methods from client interface",
+    })
     .option("quiet", {
         type: "boolean",
         description: "Suppress all logs",
@@ -106,6 +114,14 @@ if (conf.caseInsensitiveNames) {
     options.caseInsensitiveNames = conf.caseInsensitiveNames;
 }
 
+if (conf.kebabFileName) {
+    options.kebabFileName = conf.kebabFileName;
+}
+
+if (conf.deduplicateSoapMethods) {
+    options.deduplicateSoapMethods = conf.deduplicateSoapMethods;
+}
+
 Logger.debug("Options");
 Logger.debug(JSON.stringify(options, null, 2));
 
@@ -138,13 +154,13 @@ if (conf._ === undefined || conf._.length === 0) {
             try {
                 await parseAndGenerate(wsdlPath, path.join(outDir), options);
             } catch (err) {
-                Logger.error(`Error occured while generating client "${wsdlName}"`);
+                Logger.error(`Error occurred while generating client "${wsdlName}"`);
                 Logger.error(`\t${err}`);
                 errorsCount += 1;
             }
         }
         if (errorsCount) {
-            Logger.error(`${errorsCount} Errors occured!`);
+            Logger.error(`${errorsCount} Errors occurred!`);
             process.exit(1);
         }
     }

@@ -53,6 +53,16 @@ export interface Options {
      * @default true
      */
     colors: boolean;
+    /**
+     * Name files using kebab format (file-name.ts)
+     * @default false
+     **/
+    kebabFileName: boolean;
+    /**
+     * Remove duplicated methods from client interface
+     * @default false
+     **/
+    deduplicateSoapMethods: boolean;
 }
 
 export const defaultOptions: Options = {
@@ -62,6 +72,8 @@ export const defaultOptions: Options = {
     caseInsensitiveNames: false,
     maxRecursiveDefinitionName: 64,
     modelPropertyNaming: null,
+    kebabFileName: false,
+    deduplicateSoapMethods: false,
     //
     verbose: false,
     quiet: false,
@@ -92,7 +104,7 @@ export async function parseAndGenerate(
         Logger.isError = false;
     }
 
-    // Logger.debug(`Options: ${JSON.stringify(mergedOptions, null, 2)}`);
+    Logger.debug(`Options: ${JSON.stringify(mergedOptions, null, 2)}`);
 
     const timeParseStart = process.hrtime();
     const parsedWsdl = await parseWsdl(wsdlPath, mergedOptions);

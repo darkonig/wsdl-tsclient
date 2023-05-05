@@ -1,10 +1,5 @@
 # WSDL TSClient
 
-[![travis-status](https://travis-ci.org/dderevjanik/wsdl-tsclient.svg?branch=master)](https://travis-ci.org/dderevjanik/wsdl-tsclient)
-![license](https://img.shields.io/npm/l/wsdl-tsclient)
-[![Known Vulnerabilities](https://snyk.io/test/github/dderevjanik/wsdl-tsclient/badge.svg)](https://snyk.io/test/github/dderevjanik/wsdl-tsclient)
-[![npm-version](https://img.shields.io/npm/v/wsdl-tsclient)](https://npmjs.com/package/wsdl-tsclient)
-
 **Example how to generate and use wsdl-tsclient:** [wsdl-tsclient-example](https://github.com/dderevjanik/wsdl-tsclient-example)
 
 Generate a [soap client](https://www.npmjs.com/package/soap) with typescript definitions from a WSDL file.
@@ -57,6 +52,10 @@ Options:
       --maxRecursiveDefinitionName  Maximum count of definition's with same name
                                     but increased suffix. Will throw an error if
                                     exceed                              [number]
+      --kebabFileName               Name files using kebab format (file-name.ts)
+                                                                        [boolean]
+      --deduplicateSoapMethods      Remove duplicated methods from the client 
+                                    interface                          [boolean]
       --quiet                       Suppress all logs                  [boolean]
       --verbose                     Print verbose logs                 [boolean]
       --no-color                    Logs without colors                [boolean]

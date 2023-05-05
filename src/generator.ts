@@ -1,3 +1,4 @@
+import camelToKebabCase from "camel-to-kebab";
 import camelcase from "camelcase";
 import path from "path";
 import {
@@ -15,11 +16,15 @@ import { Logger } from "./utils/logger";
 export interface GeneratorOptions {
     emitDefinitionsOnly: boolean;
     modelPropertyNaming: ModelPropertyNaming;
+    deduplicateSoapMethods: boolean;
+    kebabFileName: boolean;
 }
 
 const defaultOptions: GeneratorOptions = {
     emitDefinitionsOnly: false,
     modelPropertyNaming: null,
+    deduplicateSoapMethods: false,
+    kebabFileName: false,
 };
 
 /**
@@ -65,6 +70,10 @@ function createProperty(
     };
 }
 
+function getFileName(defName: string, options: Partial<GeneratorOptions>): string {
+    return options.kebabFileName ? camelToKebabCase(defName) : defName;
+}
+
 function generateDefinitionFile(
     project: Project,
     definition: null | Definition,
@@ -74,7 +83,7 @@ function generateDefinitionFile(
     options: GeneratorOptions
 ): void {
     const defName = definition.name;
-    const defFilePath = path.join(defDir, `${defName}.ts`);
+    const defFilePath = path.join(defDir, `${getFileName(defName, options)}.ts`);
     const defFile = project.createSourceFile(defFilePath, "", {
         overwrite: true,
     });
@@ -105,7 +114,7 @@ function generateDefinitionFile(
             }
             // If a property is of the same type as its parent type, don't add import
             if (prop.ref.name !== definition.name) {
-                addSafeImport(definitionImports, `./${prop.ref.name}`, prop.ref.name);
+                addSafeImport(definitionImports, `./${getFileName(prop.ref.name, options)}`, prop.ref.name);
             }
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, prop.isArray));
         }
@@ -122,8 +131,21 @@ function generateDefinitionFile(
             properties: definitionProperties,
         },
     ]);
-    Logger.log(`Writing Definition file: ${path.resolve(path.join(defDir, defName))}.ts`);
+    Logger.log(`Writing Definition file: ${path.resolve(path.join(defDir, getFileName(defName, options)))}.ts`);
     defFile.saveSync();
+}
+
+function methodIncluded(allMethods: Method[], method: Method): boolean {
+    return allMethods.some((m) => {
+        const mProps = m.paramDefinition.properties.map((p) => p.name);
+        const methodProps = method.paramDefinition.properties.map((p) => p.name);
+
+        return (
+            m.name === method.name &&
+            mProps.every((e) => methodProps.includes(e)) &&
+            methodProps.every((e) => mProps.includes(e))
+        );
+    });
 }
 
 export async function generate(
@@ -147,7 +169,7 @@ export async function generate(
     const clientImports: Array<OptionalKind<ImportDeclarationStructure>> = [];
     const clientServices: Array<OptionalKind<PropertySignatureStructure>> = [];
     for (const service of parsedWsdl.services) {
-        const serviceFilePath = path.join(servicesDir, `${service.name}.ts`);
+        const serviceFilePath = path.join(servicesDir, `${getFileName(service.name, options)}.ts`);
         const serviceFile = project.createSourceFile(serviceFilePath, "", {
             overwrite: true,
         });
@@ -155,7 +177,7 @@ export async function generate(
         const serviceImports: Array<OptionalKind<ImportDeclarationStructure>> = [];
         const servicePorts: Array<OptionalKind<PropertySignatureStructure>> = [];
         for (const port of parsedWsdl.ports) {
-            const portFilePath = path.join(portsDir, `${port.name}.ts`);
+            const portFilePath = path.join(portsDir, `${getFileName(port.name, options)}.ts`);
             const portFile = project.createSourceFile(portFilePath, "", {
                 overwrite: true,
             });
@@ -175,15 +197,10 @@ export async function generate(
                             allDefinitions,
                             mergedOptions
                         );
-                        addSafeImport(
-                            clientImports,
-                            `./definitions/${method.paramDefinition.name}`,
-                            method.paramDefinition.name
-                        );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.paramDefinition.name}`,
+                        `../definitions/${getFileName(method.paramDefinition.name, options)}`,
                         method.paramDefinition.name
                     );
                 }
@@ -198,20 +215,31 @@ export async function generate(
                             allDefinitions,
                             mergedOptions
                         );
-                        addSafeImport(
-                            clientImports,
-                            `./definitions/${method.returnDefinition.name}`,
-                            method.returnDefinition.name
-                        );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.returnDefinition.name}`,
+                        `../definitions/${getFileName(method.returnDefinition.name, options)}`,
                         method.returnDefinition.name
                     );
                 }
                 // TODO: Deduplicate PortMethods
-                allMethods.push(method);
+                if (!options.deduplicateSoapMethods || !methodIncluded(allMethods, method)) {
+                    allMethods.push(method);
+                    if (method.paramDefinition !== null) {
+                        addSafeImport(
+                            clientImports,
+                            `./definitions/${getFileName(method.paramDefinition.name, options)}`,
+                            method.paramDefinition.name
+                        );
+                    }
+                    if (method.returnDefinition !== null) {
+                        addSafeImport(
+                            clientImports,
+                            `./definitions/${getFileName(method.returnDefinition.name, options)}`,
+                            method.returnDefinition.name
+                        );
+                    }
+                }
                 portFileMethods.push({
                     name: sanitizePropName(method.name),
                     parameters: [
@@ -230,7 +258,7 @@ export async function generate(
                 });
             } // End of PortMethod
             if (!mergedOptions.emitDefinitionsOnly) {
-                addSafeImport(serviceImports, `../ports/${port.name}`, port.name);
+                addSafeImport(serviceImports, `../ports/${getFileName(port.name, options)}`, port.name);
                 servicePorts.push({
                     name: sanitizePropName(port.name),
                     isReadonly: true,
@@ -246,13 +274,15 @@ export async function generate(
                         methods: portFileMethods,
                     },
                 ]);
-                Logger.log(`Writing Port file: ${path.resolve(path.join(portsDir, port.name))}.ts`);
+                Logger.log(
+                    `Writing Port file: ${path.resolve(path.join(portsDir, getFileName(port.name, options)))}.ts`
+                );
                 portFile.saveSync();
             }
         } // End of Port
 
         if (!mergedOptions.emitDefinitionsOnly) {
-            addSafeImport(clientImports, `./services/${service.name}`, service.name);
+            addSafeImport(clientImports, `./services/${getFileName(service.name, options)}`, service.name);
             clientServices.push({ name: sanitizePropName(service.name), type: service.name });
 
             serviceFile.addImportDeclarations(serviceImports);
@@ -265,7 +295,9 @@ export async function generate(
                     properties: servicePorts,
                 },
             ]);
-            Logger.log(`Writing Service file: ${path.resolve(path.join(servicesDir, service.name))}.ts`);
+            Logger.log(
+                `Writing Service file: ${path.resolve(path.join(servicesDir, getFileName(service.name, options)))}.ts`
+            );
             serviceFile.saveSync();
         }
     } // End of Service
@@ -333,7 +365,7 @@ export async function generate(
     indexFile.addExportDeclarations(
         allDefinitions.map((def) => ({
             namedExports: [def.name],
-            moduleSpecifier: `./definitions/${def.name}`,
+            moduleSpecifier: `./definitions/${getFileName(def.name, options)}`,
         }))
     );
     if (!mergedOptions.emitDefinitionsOnly) {
@@ -348,13 +380,13 @@ export async function generate(
         indexFile.addExportDeclarations(
             parsedWsdl.services.map((service) => ({
                 namedExports: [service.name],
-                moduleSpecifier: `./services/${service.name}`,
+                moduleSpecifier: `./services/${getFileName(service.name, options)}`,
             }))
         );
         indexFile.addExportDeclarations(
             parsedWsdl.ports.map((port) => ({
                 namedExports: [port.name],
-                moduleSpecifier: `./ports/${port.name}`,
+                moduleSpecifier: `./ports/${getFileName(port.name, options)}`,
             }))
         );
     }

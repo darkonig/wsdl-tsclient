@@ -277,6 +277,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                     const type = parsedWsdl.findDefinition(
                                         inputMessage.element.$type ?? inputMessage.element.$name
                                     );
+
                                     inputDefinition = type
                                         ? type
                                         : parseDefinition(
@@ -309,6 +310,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                             let outputDefinition: Definition = null; // default type, `{}` or `unknown` ?
                             if (method.output) {
                                 const outputMessage = wsdl.definitions.messages[method.output.$name];
+
                                 if (outputMessage.element) {
                                     // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
                                     const typeName = outputMessage.element.$type ?? outputMessage.element.$name;
