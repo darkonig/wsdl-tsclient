@@ -55,6 +55,7 @@ Options:
       --kebabFileName               Name files using kebab format (file-name.ts)
                                                                         [boolean]
       --deduplicateSoapMethods      Remove duplicated methods from the client 
+      --generateAttributes          Generate element attributes        [boolean]
                                     interface                          [boolean]
       --quiet                       Suppress all logs                  [boolean]
       --verbose                     Print verbose logs                 [boolean]

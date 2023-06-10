@@ -18,6 +18,11 @@ export interface Options {
      */
     emitDefinitionsOnly: boolean;
     /**
+     * Generate element attributes
+     * @default false
+     */
+    generateAttributes: boolean;
+    /**
      * Prefix for generated interface names
      * @default ""
      */
@@ -67,6 +72,7 @@ export interface Options {
 
 export const defaultOptions: Options = {
     emitDefinitionsOnly: false,
+    generateAttributes: false,
     modelNamePreffix: "",
     modelNameSuffix: "",
     caseInsensitiveNames: false,

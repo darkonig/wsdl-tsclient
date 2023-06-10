@@ -23,6 +23,10 @@ const conf = yargs(process.argv.slice(2))
         type: "boolean",
         description: "Generate only Definitions",
     })
+    .option("generateAttributes", {
+        type: "boolean",
+        description: "Generate element attributes",
+    })
     .option("modelNamePreffix", {
         type: "string",
         description: "Prefix for generated interface names",
@@ -96,6 +100,10 @@ if (conf.quiet) {
 
 if (conf.emitDefinitionsOnly) {
     options.emitDefinitionsOnly = true;
+}
+
+if (conf.generateAttributes) {
+    options.generateAttributes = true;
 }
 
 if (conf.modelNamePreffix) {

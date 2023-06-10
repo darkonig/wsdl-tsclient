@@ -18,6 +18,7 @@ export interface GeneratorOptions {
     modelPropertyNaming: ModelPropertyNaming;
     deduplicateSoapMethods: boolean;
     kebabFileName: boolean;
+    generateXSDDefs: boolean;
 }
 
 const defaultOptions: GeneratorOptions = {
@@ -25,6 +26,7 @@ const defaultOptions: GeneratorOptions = {
     modelPropertyNaming: null,
     deduplicateSoapMethods: false,
     kebabFileName: false,
+    generateXSDDefs: false,
 };
 
 /**
@@ -89,10 +91,16 @@ function generateDefinitionFile(
     });
 
     generated.push(definition);
+    if (definition.name.startsWith("Sb168Frozen")) {
+        console.debug(definition.name, definition);
+        console.dir(definition, { depth: null });
+    }
 
     const definitionImports: OptionalKind<ImportDeclarationStructure>[] = [];
     const definitionProperties: PropertySignatureStructure[] = [];
     for (const prop of definition.properties) {
+        console.debug(`generating ${defName}.${prop.name}`);
+
         if (options.modelPropertyNaming) {
             switch (options.modelPropertyNaming) {
                 case ModelPropertyNaming.camelCase:
@@ -168,6 +176,21 @@ export async function generate(
 
     const clientImports: Array<OptionalKind<ImportDeclarationStructure>> = [];
     const clientServices: Array<OptionalKind<PropertySignatureStructure>> = [];
+
+    // if (mergedOptions.generateXSDDefs) {
+    //     console.debug(parsedWsdl.definitions);
+    //     parsedWsdl.definitions.map((definition) => {
+    //         generateDefinitionFile(
+    //             project, subAttrDefinition,
+    //             definition,
+    //             defDir,
+    //             [definition.name],
+    //             allDefinitions,
+    //             mergedOptions
+    //         );
+    //     });
+    // }
+
     for (const service of parsedWsdl.services) {
         const serviceFilePath = path.join(servicesDir, `${getFileName(service.name, options)}.ts`);
         const serviceFile = project.createSourceFile(serviceFilePath, "", {
